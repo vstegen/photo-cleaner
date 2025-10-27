@@ -31,7 +31,7 @@ enum Command {
         compressed: PathBuf,
         #[clap(long)]
         /// Do not delete files and instead output which files would be deleted.
-        dry: Option<bool>,
+        dry: bool,
         #[clap(short, long)]
         /// Print detailed output for each file operation.
         verbose: bool,
@@ -71,8 +71,7 @@ fn main() {
                 process::exit(1);
             }
 
-            let dry_run = dry.unwrap_or(false);
-            clean_photos(&raw, &compressed, dry_run, verbose);
+            clean_photos(&raw, &compressed, dry, verbose);
         }
     }
 }
