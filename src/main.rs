@@ -32,6 +32,9 @@ enum Command {
         #[clap(long)]
         /// Do not delete files and instead output which files would be deleted.
         dry: Option<bool>,
+        #[clap(short, long)]
+        /// Print detailed output for each file operation.
+        verbose: bool,
     },
 }
 
@@ -43,6 +46,7 @@ fn main() {
             raw,
             compressed,
             dry,
+            verbose,
         } => {
             if !raw.exists() {
                 eprintln!("Error: Raw directory does not exist: {}", raw.display());
@@ -68,7 +72,7 @@ fn main() {
             }
 
             let dry_run = dry.unwrap_or(false);
-            clean_photos(&raw, &compressed, dry_run);
+            clean_photos(&raw, &compressed, dry_run, verbose);
         }
     }
 }
@@ -133,7 +137,7 @@ fn find_matching_raw(
     None
 }
 
-fn clean_photos(raw_root: &Path, compressed_root: &Path, dry_run: bool) {
+fn clean_photos(raw_root: &Path, compressed_root: &Path, dry_run: bool, verbose: bool) {
     println!(
         "Scanning for JPEG files in {}...",
         compressed_root.display()
@@ -148,7 +152,9 @@ fn clean_photos(raw_root: &Path, compressed_root: &Path, dry_run: bool) {
     for jpeg_file in &jpeg_files {
         match find_matching_raw(jpeg_file, compressed_root, raw_root) {
             Some(raw_file) => {
-                println!("✓ {} -> {}", jpeg_file.display(), raw_file.display());
+                if verbose {
+                    println!("✓ {} -> {}", jpeg_file.display(), raw_file.display());
+                }
             }
             None => {
                 to_delete.push(jpeg_file.clone());
@@ -178,7 +184,11 @@ fn clean_photos(raw_root: &Path, compressed_root: &Path, dry_run: bool) {
         println!("\nDeleting {} files...", to_delete.len());
         for file in &to_delete {
             match fs::remove_file(file) {
-                Ok(_) => println!("  Deleted: {}", file.display()),
+                Ok(_) => {
+                    if verbose {
+                        println!("  Deleted: {}", file.display());
+                    }
+                }
                 Err(e) => {
                     eprintln!("  Error deleting {}: {}", file.display(), e);
                     errors.push(file.clone());
